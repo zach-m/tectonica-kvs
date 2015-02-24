@@ -355,6 +355,27 @@ public class SqliteKeyValueStore<V extends Serializable> extends AbstractKeyValu
 			return valueIteratorOfResultSet(selectByIndex(f));
 		}
 
+		@Override
+		public Iterator<KeyValue<String, V>> iteratorOfRange(F from, F to)
+		{
+			return entryIteratorOfResultSet(selectByIndexRange(from, to));
+		}
+
+		@Override
+		public Iterator<String> keyIteratorOfRange(F from, F to)
+		{
+			return keyIteratorOfResultSet(selectByIndexRange(from, to));
+		}
+
+		@Override
+		public Iterator<V> valueIteratorOfRange(F from, F to)
+		{
+			return valueIteratorOfResultSet(selectByIndexRange(from, to));
+		}
+
+		/**
+		 * NOTE: we save the indexes values as strings instead of their possibly other native data type, can be improved
+		 */
 		private ResultSetIterator selectByIndex(final F f)
 		{
 			ExecutionContext ctx = jdbc.startExecute(new ConnListener<ResultSet>()
@@ -370,11 +391,53 @@ public class SqliteKeyValueStore<V extends Serializable> extends AbstractKeyValu
 			return ctx.iterator();
 		}
 
+		/**
+		 * NOTE: we save the indexes values as strings instead of their possibly other native data type, can be improved
+		 */
+		private ResultSetIterator selectByIndexRange(final F from, final F to)
+		{
+			if (from == null && to == null)
+				throw new NullPointerException("both 'from' and 'to' are null");
+
+			ExecutionContext ctx = jdbc.startExecute(new ConnListener<ResultSet>()
+			{
+				@Override
+				public ResultSet onConnection(Connection conn) throws SQLException
+				{
+					final PreparedStatement stmt;
+					if (from != null && to != null)
+					{
+						stmt = conn.prepareStatement(sqlSelectByIndexRange(name));
+						stmt.setString(1, from.toString());
+						stmt.setString(2, to.toString());
+					}
+					else if (from != null)
+					{
+						stmt = conn.prepareStatement(sqlSelectByIndexTail(name));
+						stmt.setString(1, from.toString());
+					}
+					else
+					// if (to != null)
+					{
+						stmt = conn.prepareStatement(sqlSelectByIndexHead(name));
+						stmt.setString(1, to.toString());
+					}
+					return stmt.executeQuery();
+				}
+			});
+			return ctx.iterator();
+		}
+
+		/**
+		 * NOTE: we save the indexes values as strings instead of their possibly other native data type, can be improved
+		 */
 		private String getIndexedFieldOf(V value)
+		// TODO: this method should return 'F', not 'String'
 		{
 			F idx = mapper.getIndexedFieldOf(value);
 			return (idx == null) ? null : idx.toString();
 		}
+
 	}
 
 	/***********************************************************************************
@@ -427,9 +490,11 @@ public class SqliteKeyValueStore<V extends Serializable> extends AbstractKeyValu
 		return String.format("DELETE FROM %s", table); // not TRUNCATE, as we want the deleted-count
 	}
 
+	/**
+	 * NOTE: we save the indexes values as strings instead of their possibly other native data type, can be improved
+	 */
 	private String sqlAddColumn(String indexName)
 	{
-		// TODO: we save the indexes values as strings instead of their possibly other native data type, can be improved
 		return String.format("ALTER TABLE %s ADD COLUMN %s VARCHAR2", table, colOfIndex(indexName));
 	}
 
@@ -441,6 +506,21 @@ public class SqliteKeyValueStore<V extends Serializable> extends AbstractKeyValu
 	private String sqlSelectByIndex(String indexName)
 	{
 		return String.format("SELECT K,V FROM %s WHERE %s=?", table, colOfIndex(indexName));
+	}
+
+	private String sqlSelectByIndexRange(String indexName)
+	{
+		return String.format("SELECT K,V FROM %s WHERE %s>=? AND %s<?", table, colOfIndex(indexName), colOfIndex(indexName));
+	}
+
+	private String sqlSelectByIndexHead(String indexName)
+	{
+		return String.format("SELECT K,V FROM %s WHERE %s<?", table, colOfIndex(indexName));
+	}
+
+	private String sqlSelectByIndexTail(String indexName)
+	{
+		return String.format("SELECT K,V FROM %s WHERE %s>=?", table, colOfIndex(indexName));
 	}
 
 	private String colOfIndex(String indexName)
@@ -616,6 +696,9 @@ public class SqliteKeyValueStore<V extends Serializable> extends AbstractKeyValu
 
 	}
 
+	/**
+	 * NOTE: we save the indexes values as strings instead of their possibly other native data type, can be improved
+	 */
 	private Integer upsertRow(final String key, final V value, final boolean strictInsert)
 	{
 		return jdbc.execute(new ConnListener<Integer>()
@@ -630,7 +713,7 @@ public class SqliteKeyValueStore<V extends Serializable> extends AbstractKeyValu
 				{
 					SqliteIndexImpl<?> index = indexes.get(i);
 					String field = (value == null) ? null : index.getIndexedFieldOf(value);
-					stmt.setString(3 + i, field);
+					stmt.setString(3 + i, field); // TODO: change from 'String' to the native type of the index
 				}
 				return stmt.executeUpdate();
 			}

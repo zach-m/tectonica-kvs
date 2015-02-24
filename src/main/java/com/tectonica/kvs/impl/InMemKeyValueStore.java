@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.tectonica.collections.ConcurrentMultimap;
+import com.tectonica.collections.ConcurrentNavigableMultimap;
 import com.tectonica.kvs.AbstractIndex;
 import com.tectonica.kvs.AbstractKeyValueStore;
 import com.tectonica.kvs.Index;
@@ -251,18 +251,58 @@ public class InMemKeyValueStore<K, V extends Serializable> extends AbstractKeyVa
 	 */
 	public class InMemIndexImpl<F> extends AbstractIndex<K, V, F>
 	{
-		private ConcurrentMultimap<Object, K> dictionary;
+		private ConcurrentNavigableMultimap<Object, K> dictionary;
 
 		public InMemIndexImpl(IndexMapper<V, F> mapper, String name)
 		{
 			super(mapper, name);
-			this.dictionary = new ConcurrentMultimap<>();
+			this.dictionary = new ConcurrentNavigableMultimap<>();
 		}
 
 		@Override
 		public Iterator<KeyValue<K, V>> iteratorOf(F f)
 		{
-			final Iterator<K> iter = keyIteratorOf(f);
+			return keyIteratorToEntryIterator(keyIteratorOf(f));
+		}
+
+		@Override
+		public Iterator<K> keyIteratorOf(F f)
+		{
+			Set<K> keys = dictionary.get(f);
+			if (keys == null)
+				return Collections.emptyIterator();
+			return keys.iterator();
+		}
+
+		@Override
+		public Iterator<V> valueIteratorOf(F f)
+		{
+			return keyIteratorToValueIterator(keyIteratorOf(f));
+		}
+
+		@Override
+		public Iterator<KeyValue<K, V>> iteratorOfRange(F from, F to)
+		{
+			return keyIteratorToEntryIterator(keyIteratorOfRange(from, to));
+		}
+
+		@Override
+		public Iterator<K> keyIteratorOfRange(F from, F to)
+		{
+			Set<K> keys = dictionary.getRange(from, to);
+			if (keys == null)
+				return Collections.emptyIterator();
+			return keys.iterator();
+		}
+
+		@Override
+		public Iterator<V> valueIteratorOfRange(F from, F to)
+		{
+			return keyIteratorToValueIterator(keyIteratorOfRange(from, to));
+		}
+
+		private Iterator<KeyValue<K, V>> keyIteratorToEntryIterator(final Iterator<K> iter)
+		{
 			return new Iterator<KeyValue<K, V>>()
 			{
 				@Override
@@ -286,19 +326,8 @@ public class InMemKeyValueStore<K, V extends Serializable> extends AbstractKeyVa
 			};
 		}
 
-		@Override
-		public Iterator<K> keyIteratorOf(F f)
+		private Iterator<V> keyIteratorToValueIterator(final Iterator<K> iter)
 		{
-			Set<K> keys = dictionary.get(f);
-			if (keys == null)
-				return Collections.emptyIterator();
-			return keys.iterator();
-		}
-
-		@Override
-		public Iterator<V> valueIteratorOf(F f)
-		{
-			final Iterator<K> iter = keyIteratorOf(f);
 			return new Iterator<V>()
 			{
 				@Override

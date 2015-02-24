@@ -33,13 +33,21 @@ public interface Index<K, V, F>
 
 	String getName();
 
+	// ////////////////////////////////////////////////////////////////////////////////////
+
 	Iterator<KeyValue<K, V>> iteratorOf(F f);
 
 	Iterator<K> keyIteratorOf(F f);
 
 	Iterator<V> valueIteratorOf(F f);
 
-	boolean containsKeyOf(F f);
+	Iterator<KeyValue<K, V>> iteratorOfRange(F from, F to);
+
+	Iterator<K> keyIteratorOfRange(F from, F to);
+
+	Iterator<V> valueIteratorOfRange(F from, F to);
+
+	// ////////////////////////////////////////////////////////////////////////////////////
 
 	Set<K> keySetOf(F f);
 
@@ -52,6 +60,24 @@ public interface Index<K, V, F>
 	Iterable<K> asKeyIterableOf(F f);
 
 	Iterable<V> asValueIterableOf(F f);
+
+	// ////////////////////////////////////////////////////////////////////////////////////
+
+	Set<K> keySetOfRange(F from, F to);
+
+	List<V> valuesOfRange(F from, F to);
+
+	List<KeyValue<K, V>> entriesOfRange(F from, F to);
+
+	Iterable<KeyValue<K, V>> asIterableOfRange(F from, F to);
+
+	Iterable<K> asKeyIterableOfRange(F from, F to);
+
+	Iterable<V> asValueIterableOfRange(F from, F to);
+
+	// ////////////////////////////////////////////////////////////////////////////////////
+
+	boolean containsKeyOf(F f);
 
 	KeyValue<K, V> getFirstEntry(F f);
 

@@ -92,6 +92,22 @@ public abstract class TestKeyValueStore
 		System.err.println("[TEST]  " + (l = bundleToTopicId.valuesOf(Topic.bundle("type3", TopicKind.AAA))));
 		assertTrue(l.equals(Arrays.asList(t3, t4)) || l.equals(Arrays.asList(t4, t3)));
 		System.err.println("-----------------------------------------------");
+		System.err.println("[TEST]  " + "-- Only types 0..1:");
+		System.err.println("[TEST]  " + (l = bundleToTopicId.valuesOfRange(Topic.bundle("type0", TopicKind.AAA), Topic.bundle("type1", TopicKind.AAA))));
+		assertTrue(l.isEmpty());
+		System.err.println("-----------------------------------------------");
+		System.err.println("[TEST]  " + "-- Only types 1..3:");
+		System.err.println("[TEST]  " + (l = bundleToTopicId.valuesOfRange(Topic.bundle("type1", TopicKind.AAA), Topic.bundle("type3", TopicKind.AAA))));
+		assertTrue(l.equals(Arrays.asList(t1, t2)) || l.equals(Arrays.asList(t2, t1)));
+		System.err.println("-----------------------------------------------");
+		System.err.println("[TEST]  " + "-- Only types ..3:");
+		System.err.println("[TEST]  " + (l = bundleToTopicId.valuesOfRange(null, Topic.bundle("type3", TopicKind.AAA))));
+		assertTrue(l.equals(Arrays.asList(t1, t2)) || l.equals(Arrays.asList(t2, t1)));
+		System.err.println("-----------------------------------------------");
+		System.err.println("[TEST]  " + "-- Only types 2..:");
+		System.err.println("[TEST]  " + (l = bundleToTopicId.valuesOfRange(Topic.bundle("type2", TopicKind.AAA), null)));
+		assertTrue(l.equals(Arrays.asList(t3, t4)) || l.equals(Arrays.asList(t4, t3)));
+		System.err.println("-----------------------------------------------");
 		store.update("003", new Updater<Topic>()
 		{
 			@Override

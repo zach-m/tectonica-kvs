@@ -48,12 +48,6 @@ public abstract class AbstractIndex<K, V, F> implements Index<K, V, F>
 	// ///////////////////////////////////////////////////////////////////////////////////////
 
 	@Override
-	public boolean containsKeyOf(F f)
-	{
-		return (keyIteratorOf(f).hasNext());
-	}
-
-	@Override
 	public Set<K> keySetOf(F f)
 	{
 		return KvsUtil.iterateInto(keyIteratorOf(f), new HashSet<K>());
@@ -87,6 +81,52 @@ public abstract class AbstractIndex<K, V, F> implements Index<K, V, F>
 	public Iterable<V> asValueIterableOf(F f)
 	{
 		return KvsUtil.iterableOf(valueIteratorOf(f));
+	}
+
+	// ///////////////////////////////////////////////////////////////////////////////////////
+
+	@Override
+	public Set<K> keySetOfRange(F from, F to)
+	{
+		return KvsUtil.iterateInto(keyIteratorOfRange(from, to), new HashSet<K>());
+	}
+
+	@Override
+	public List<V> valuesOfRange(F from, F to)
+	{
+		return KvsUtil.iterateInto(valueIteratorOfRange(from, to), new ArrayList<V>());
+	}
+
+	@Override
+	public List<KeyValue<K, V>> entriesOfRange(F from, F to)
+	{
+		return KvsUtil.iterateInto(iteratorOfRange(from, to), new ArrayList<KeyValue<K, V>>());
+	}
+
+	@Override
+	public Iterable<KeyValue<K, V>> asIterableOfRange(F from, F to)
+	{
+		return KvsUtil.iterableOf(iteratorOfRange(from, to));
+	}
+
+	@Override
+	public Iterable<K> asKeyIterableOfRange(F from, F to)
+	{
+		return KvsUtil.iterableOf(keyIteratorOfRange(from, to));
+	}
+
+	@Override
+	public Iterable<V> asValueIterableOfRange(F from, F to)
+	{
+		return KvsUtil.iterableOf(valueIteratorOfRange(from, to));
+	}
+
+	// ///////////////////////////////////////////////////////////////////////////////////////
+
+	@Override
+	public boolean containsKeyOf(F f)
+	{
+		return (keyIteratorOf(f).hasNext());
 	}
 
 	@Override

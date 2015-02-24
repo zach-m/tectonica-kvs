@@ -36,6 +36,7 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.CompositeFilterOperator;
 import com.google.appengine.api.datastore.Query.Filter;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.FilterPredicate;
@@ -315,9 +316,51 @@ public class GaeKeyValueStore<V extends Serializable> extends AbstractKeyValueSt
 			return valueIteratorOfQuery(newIndexQuery(f));
 		}
 
+		@Override
+		public Iterator<KeyValue<String, V>> iteratorOfRange(F from, F to)
+		{
+			return entryIteratorOfQuery(newIndexRangeQuery(from, to));
+		}
+
+		@Override
+		public Iterator<String> keyIteratorOfRange(F from, F to)
+		{
+			return keyIteratorOfQuery(newIndexRangeQuery(from, to).setKeysOnly());
+		}
+
+		@Override
+		public Iterator<V> valueIteratorOfRange(F from, F to)
+		{
+			return valueIteratorOfQuery(newIndexRangeQuery(from, to));
+		}
+		
+		// ///////////////////////////////////////////////////////////////////////////////////////
+
 		private Query newIndexQuery(F f)
 		{
 			Filter filter = new FilterPredicate(propertyName(), FilterOperator.EQUAL, f);
+			return newQuery().setFilter(filter);
+		}
+
+		private Query newIndexRangeQuery(F from, F to)
+		{
+			if (from == null && to == null)
+				throw new NullPointerException("both 'from' and 'to' are null");
+
+			final String prop = propertyName();
+
+			Filter fromFilter = null, toFilter = null;
+			if (from != null)
+				fromFilter = new FilterPredicate(prop, FilterOperator.GREATER_THAN_OR_EQUAL, from);
+			if (to != null)
+				toFilter = new FilterPredicate(prop, FilterOperator.LESS_THAN, to);
+
+			final Filter filter;
+			if (fromFilter != null && toFilter != null)
+				filter = CompositeFilterOperator.and(fromFilter, toFilter);
+			else
+				filter = (fromFilter != null) ? fromFilter : toFilter;
+
 			return newQuery().setFilter(filter);
 		}
 
@@ -503,7 +546,8 @@ public class GaeKeyValueStore<V extends Serializable> extends AbstractKeyValueSt
 		}
 	}
 
-	/* <dependency>
+	/*
+	 * <dependency>
 	 * <groupId>de.ruedigermoeller</groupId>
 	 * <artifactId>fst</artifactId>
 	 * <version>2.18</version>
