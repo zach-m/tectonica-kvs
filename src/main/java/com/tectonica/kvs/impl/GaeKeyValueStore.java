@@ -287,7 +287,9 @@ public class GaeKeyValueStore<V extends Serializable> extends AbstractKeyValueSt
 	}
 
 	/**
-	 * GAE implementation of an index - simply exposes the Datastore property filters
+	 * GAE implementation of an index - simply exposes the Datastore property filters.
+	 * 
+	 * NOTE: Range queries require corresponding index configuration at 'datastore-indexes.xml'
 	 * 
 	 * @author Zach Melamed
 	 */
@@ -333,7 +335,7 @@ public class GaeKeyValueStore<V extends Serializable> extends AbstractKeyValueSt
 		{
 			return valueIteratorOfQuery(newIndexRangeQuery(from, to));
 		}
-		
+
 		// ///////////////////////////////////////////////////////////////////////////////////////
 
 		private Query newIndexQuery(F f)
