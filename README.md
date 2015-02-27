@@ -15,7 +15,7 @@ To use in your project, add the following to your `pom.xml`:
 	<dependency>
 		<groupId>com.tectonica</groupId>
 		<artifactId>tectonica-kvs</artifactId>
-		<version>0.6.0</version>
+		<version>0.6.1</version>
 	</dependency>
 
  

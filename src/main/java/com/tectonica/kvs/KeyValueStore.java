@@ -170,7 +170,21 @@ public interface KeyValueStore<K, V> extends Iterable<KeyValue<K, V>>
 
 	// ETC
 
+	/**
+	 * returns an object representing an {@link Index} on the stored entries. The index allows quick search of keys by a certain expression,
+	 * calculated whenever an entry is stored / modified.
+	 * <p>
+	 * NOTE: When the underlying storage engine is SQL-based, use {@link #createTypedIndex(String, Class, IndexMapper)} instead.
+	 */
 	<F> Index<K, V, F> createIndex(String indexName, IndexMapper<V, F> mapFunc);
+
+	/**
+	 * returns an object representing an {@link Index} on the stored entries. The index allows quick search of keys by a certain expression,
+	 * calculated whenever an entry is stored / modified.
+	 * <p>
+	 * The {@code indexClz} parameter can be null, when the underlying storage engine is not typed (true for most NoSQL engines)
+	 */
+	<F> Index<K, V, F> createTypedIndex(String indexName, Class<F> indexClz, IndexMapper<V, F> mapFunc);
 
 	void clearCache();
 

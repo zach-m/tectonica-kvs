@@ -279,7 +279,7 @@ public class GaeKeyValueStore<V extends Serializable> extends AbstractKeyValueSt
 	 ***********************************************************************************/
 
 	@Override
-	public <F> Index<String, V, F> createIndex(String indexName, IndexMapper<V, F> mapFunc)
+	public <F> Index<String, V, F> createTypedIndex(final String indexName, final Class<F> indexClz, IndexMapper<V, F> mapFunc)
 	{
 		GaeIndexImpl<F> index = new GaeIndexImpl<>(mapFunc, indexName);
 		indexes.add(index);

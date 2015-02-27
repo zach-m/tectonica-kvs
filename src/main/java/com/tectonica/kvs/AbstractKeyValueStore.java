@@ -627,7 +627,13 @@ public abstract class AbstractKeyValueStore<K, V> implements KeyValueStore<K, V>
 	 */
 
 	@Override
-	public abstract <F> Index<K, V, F> createIndex(String indexName, IndexMapper<V, F> mapFunc);
+	public <F> Index<K, V, F> createIndex(String indexName, IndexMapper<V, F> mapFunc)
+	{
+		return createTypedIndex(indexName, null, mapFunc);
+	}
+
+	@Override
+	public abstract <F> Index<K, V, F> createTypedIndex(String indexName, Class<F> indexClz, IndexMapper<V, F> mapFunc);
 
 	/* *********************************************************************************
 	 * 

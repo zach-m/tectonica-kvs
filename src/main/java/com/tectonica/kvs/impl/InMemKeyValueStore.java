@@ -239,12 +239,12 @@ public class InMemKeyValueStore<K, V extends Serializable> extends AbstractKeyVa
 	 */
 
 	@Override
-	public <F> Index<K, V, F> createIndex(String indexName, IndexMapper<V, F> mapper)
+	public <F> Index<K, V, F> createTypedIndex(final String indexName, final Class<F> indexClz, IndexMapper<V, F> mapFunc)
 	{
 		if (entries.size() > 0)
 			throw new RuntimeException("adding indexes on non-empty data set is not supported yet");
 
-		InMemIndexImpl<F> index = new InMemIndexImpl<>(mapper, indexName);
+		InMemIndexImpl<F> index = new InMemIndexImpl<>(mapFunc, indexName);
 		indexes.add(index);
 		return index;
 	}

@@ -25,12 +25,16 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.tectonica.collections.AutoEvictMap;
 import com.tectonica.core.STR;
@@ -48,6 +52,8 @@ import com.tectonica.util.SerializeUtil;
 
 public class SqliteKeyValueStore<V extends Serializable> extends AbstractKeyValueStore<String, V>
 {
+	private static final Logger LOG = LoggerFactory.getLogger(SqliteKeyValueStore.class);
+
 	private final Class<V> valueClass;
 	private final String table;
 	private final Serializer<V> serializer;
@@ -309,8 +315,11 @@ public class SqliteKeyValueStore<V extends Serializable> extends AbstractKeyValu
 	 */
 
 	@Override
-	public <F> Index<String, V, F> createIndex(final String indexName, IndexMapper<V, F> mapFunc)
+	public <F> Index<String, V, F> createTypedIndex(final String indexName, final Class<F> indexClz, IndexMapper<V, F> mapFunc)
 	{
+		if (indexClz == null)
+			LOG.info("With SQL-based KVS, it's recommended to pass an index-type to createTypedIndex(), so that column affinity can be determined");
+
 		jdbc.execute(new ConnListener<Void>()
 		{
 			@Override
@@ -318,12 +327,14 @@ public class SqliteKeyValueStore<V extends Serializable> extends AbstractKeyValu
 			{
 				try
 				{
-					conn.createStatement().executeUpdate(sqlAddColumn(indexName));
+					final String colType = SqliteUtil.javaTypeToSqliteTypeAffinity(indexClz);
+					LOG.info("Affinity of '" + indexClz + "' was set to: " + colType);
+					conn.createStatement().executeUpdate(sqlAddColumn(indexName, colType));
 				}
 				catch (Exception e)
 				{
 					// probably 'duplicate column name'
-					System.out.println(e.toString());
+					LOG.warn(e.toString());
 				}
 				conn.createStatement().executeUpdate(sqlCreateIndex(indexName));
 				return null;
@@ -378,9 +389,6 @@ public class SqliteKeyValueStore<V extends Serializable> extends AbstractKeyValu
 			return valueIteratorOfResultSet(selectByIndexRange(from, to));
 		}
 
-		/**
-		 * NOTE: we save the indexes values as strings instead of their possibly other native data type, can be improved
-		 */
 		private ResultSetIterator selectByIndex(final F f)
 		{
 			ExecutionContext ctx = jdbc.startExecute(new ConnListener<ResultSet>()
@@ -389,16 +397,13 @@ public class SqliteKeyValueStore<V extends Serializable> extends AbstractKeyValu
 				public ResultSet onConnection(Connection conn) throws SQLException
 				{
 					PreparedStatement stmt = conn.prepareStatement(sqlSelectByIndex(name));
-					stmt.setString(1, f.toString());
+					stmt.setObject(1, f);
 					return stmt.executeQuery();
 				}
 			});
 			return ctx.iterator();
 		}
 
-		/**
-		 * NOTE: we save the indexes values as strings instead of their possibly other native data type, can be improved
-		 */
 		private ResultSetIterator selectByIndexRange(final F from, final F to)
 		{
 			if (from == null && to == null)
@@ -413,19 +418,19 @@ public class SqliteKeyValueStore<V extends Serializable> extends AbstractKeyValu
 					if (from != null && to != null)
 					{
 						stmt = conn.prepareStatement(sqlSelectByIndexRange(name));
-						stmt.setString(1, from.toString());
-						stmt.setString(2, to.toString());
+						stmt.setObject(1, from);
+						stmt.setObject(2, to);
 					}
 					else if (from != null)
 					{
 						stmt = conn.prepareStatement(sqlSelectByIndexTail(name));
-						stmt.setString(1, from.toString());
+						stmt.setObject(1, from);
 					}
 					else
 					// if (to != null)
 					{
 						stmt = conn.prepareStatement(sqlSelectByIndexHead(name));
-						stmt.setString(1, to.toString());
+						stmt.setObject(1, to);
 					}
 					return stmt.executeQuery();
 				}
@@ -433,14 +438,10 @@ public class SqliteKeyValueStore<V extends Serializable> extends AbstractKeyValu
 			return ctx.iterator();
 		}
 
-		/**
-		 * NOTE: we save the indexes values as strings instead of their possibly other native data type, can be improved
-		 */
-		private String getIndexedFieldOf(V value)
-		// TODO: this method should return 'F', not 'String'
+		private F getIndexedFieldOf(V value)
 		{
 			F idx = mapper.getIndexedFieldOf(value);
-			return (idx == null) ? null : idx.toString();
+			return (idx == null) ? null : idx;
 		}
 
 	}
@@ -496,12 +497,9 @@ public class SqliteKeyValueStore<V extends Serializable> extends AbstractKeyValu
 		return String.format("DELETE FROM %s", table); // not TRUNCATE, as we want the deleted-count
 	}
 
-	/**
-	 * NOTE: we save the indexes values as strings instead of their possibly other native data type, can be improved
-	 */
-	private String sqlAddColumn(String indexName)
+	private String sqlAddColumn(String indexName, String colType)
 	{
-		return String.format("ALTER TABLE %s ADD COLUMN %s VARCHAR2", table, colOfIndex(indexName));
+		return String.format("ALTER TABLE %s ADD COLUMN %s %s", table, colOfIndex(indexName), colType);
 	}
 
 	private String sqlCreateIndex(String indexName)
@@ -703,9 +701,6 @@ public class SqliteKeyValueStore<V extends Serializable> extends AbstractKeyValu
 
 	}
 
-	/**
-	 * NOTE: we save the indexes values as strings instead of their possibly other native data type, can be improved
-	 */
 	private Integer upsertRow(final String key, final V value, final boolean strictInsert)
 	{
 		return jdbc.execute(new ConnListener<Integer>()
@@ -719,8 +714,8 @@ public class SqliteKeyValueStore<V extends Serializable> extends AbstractKeyValu
 				for (int i = 0; i < indexes.size(); i++)
 				{
 					SqliteIndexImpl<?> index = indexes.get(i);
-					String field = (value == null) ? null : index.getIndexedFieldOf(value);
-					stmt.setString(3 + i, field); // TODO: change from 'String' to the native type of the index
+					Object field = (value == null) ? null : index.getIndexedFieldOf(value);
+					stmt.setObject(3 + i, field);
 				}
 				return stmt.executeUpdate();
 			}
