@@ -139,7 +139,7 @@ public class GaeKeyValueStore<V extends Serializable> extends AbstractKeyValueSt
 			NamespaceManager.set(config.namespace);
 	}
 
-	/***********************************************************************************
+	/* **********************************************************************************
 	 * 
 	 * GETTERS
 	 * 
@@ -199,7 +199,7 @@ public class GaeKeyValueStore<V extends Serializable> extends AbstractKeyValueSt
 		return ds.prepare(newQuery().setFilter(filter).setKeysOnly()).asIterator().hasNext();
 	}
 
-	/***********************************************************************************
+	/* **********************************************************************************
 	 * 
 	 * SETTERS (UTILS)
 	 * 
@@ -235,7 +235,7 @@ public class GaeKeyValueStore<V extends Serializable> extends AbstractKeyValueSt
 		return GaeMemcacheLock.getLock(key, true, locksCacheNS);
 	}
 
-	/***********************************************************************************
+	/* **********************************************************************************
 	 * 
 	 * SETTERS
 	 * 
@@ -247,7 +247,7 @@ public class GaeKeyValueStore<V extends Serializable> extends AbstractKeyValueSt
 		save(key, value);
 	}
 
-	/***********************************************************************************
+	/* **********************************************************************************
 	 * 
 	 * DELETERS
 	 * 
@@ -272,7 +272,7 @@ public class GaeKeyValueStore<V extends Serializable> extends AbstractKeyValueSt
 		return removed; // an estimate. we have to assume that all keys existed before delete
 	}
 
-	/***********************************************************************************
+	/* **********************************************************************************
 	 * 
 	 * INDEXES
 	 * 
@@ -377,7 +377,7 @@ public class GaeKeyValueStore<V extends Serializable> extends AbstractKeyValueSt
 		}
 	}
 
-	/***********************************************************************************
+	/* **********************************************************************************
 	 * 
 	 * DATASTORE UTILS
 	 * 
@@ -505,7 +505,7 @@ public class GaeKeyValueStore<V extends Serializable> extends AbstractKeyValueSt
 		};
 	}
 
-	/***********************************************************************************
+	/* **********************************************************************************
 	 * 
 	 * SERIALIZATION
 	 * 
@@ -582,11 +582,12 @@ public class GaeKeyValueStore<V extends Serializable> extends AbstractKeyValueSt
 	 * }
 	 */
 
-	/***********************************************************************************
+	/* **********************************************************************************
 	 * 
 	 * CACHE IMPLEMENTATION
 	 * 
-	 ***********************************************************************************/
+	 * *********************************************************************************
+	 */
 
 	private abstract class AbstractMemcachedBasedCache implements Cache<String, V>
 	{
